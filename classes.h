@@ -155,6 +155,17 @@ private:
 		// TODO: After inserting the record, write the modified page back to the index file. 
 		//		 Remember to use the correct position (i.e., pageIndex) if you are writing out an overflow page!
         indexFile.seekp(pageIndex * Page_SIZE, ios::beg); // sets cursor to beginning of page
+        page.read_from_data_file(indexFile);
+
+        if (!page.insert_record_into_page(record)) {
+            if (page.overflowPointerIndex == -1) {
+
+            } else {
+                
+            }
+        }
+
+
         // Close the index file
         indexFile.close();
     }
@@ -171,7 +182,7 @@ private:
         Page page;
         page.read_from_data_file(indexFile);
 
-        // TODO:
+        // TODO: ✓
         //  - Search for the record by ID in the page
         //  - Check for overflow pages and report if record with given ID is not found
         
@@ -230,7 +241,7 @@ public:
         // Open index file in binary mode for reading
         ifstream indexFile(fileName, ios::binary | ios::in);
 
-        // TODO:
+        // TODO: ✓
         //  - Compute hash value for the given ID using compute_hash_value() function
         //  - Search for the record in the page corresponding to the hash value using searchRecordByIdInPage() function
         int hash_value = compute_hash_value(id);
