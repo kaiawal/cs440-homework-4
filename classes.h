@@ -128,6 +128,7 @@ private:
         int hash_value;
 
         // TODO: Implement the hash function h = id mod 2^8
+        hash_value = id % (int)pow(2, 8);
         return hash_value;
     }
 
@@ -174,6 +175,7 @@ private:
         // TODO:
         //  - Search for the record by ID in the page
         //  - Check for overflow pages and report if record with given ID is not found
+
     }
 
 public:
@@ -202,7 +204,8 @@ public:
             //   - Compute hash value for the record's ID using compute_hash_value() function.
             //   - Get the page index from PageDirectory. If it's not in PageDirectory, define a new page using nextFreePage.
             //   - Insert the record into the appropriate page in the index file using addRecordToIndex() function.
-
+            int hash_id = compute_hash_value(record.id);
+            
 
         }
 
