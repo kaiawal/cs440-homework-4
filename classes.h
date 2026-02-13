@@ -127,7 +127,7 @@ private:
     int compute_hash_value(int id) {
         int hash_value;
 
-        // TODO: Implement the hash function h = id mod 2^8
+        // TODO: Implement the hash function h = id mod 2^8 ✓
         hash_value = id % (int)pow(2, 8);
         return hash_value;
     }
@@ -161,7 +161,7 @@ private:
     }
 
     // Function to search for a record by ID in a given page of the index file
-    void searchRecordByIdInPage(int pageIndex, int id) {
+    Record* searchRecordByIdInPage(int pageIndex, int id) {
         // Open index file in binary mode for reading
         ifstream indexFile(fileName, ios::binary | ios::in);
 
@@ -175,6 +175,8 @@ private:
         // TODO:
         //  - Search for the record by ID in the page
         //  - Check for overflow pages and report if record with given ID is not found
+
+        return NULL;
 
     }
 
@@ -205,7 +207,7 @@ public:
             //   - Get the page index from PageDirectory. If it's not in PageDirectory, define a new page using nextFreePage.
             //   - Insert the record into the appropriate page in the index file using addRecordToIndex() function.
             int hash_id = compute_hash_value(record.id);
-            
+
 
         }
 
@@ -221,6 +223,12 @@ public:
         // TODO:
         //  - Compute hash value for the given ID using compute_hash_value() function
         //  - Search for the record in the page corresponding to the hash value using searchRecordByIdInPage() function
+        int hash_value = compute_hash_value(id);
+
+        Record* found_id = searchRecordByIdInPage(hash_value, id);
+        if (found_id != NULL) {
+            found_id->print();
+        }
 
         // Close the index file
         indexFile.close();
