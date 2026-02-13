@@ -181,6 +181,7 @@ private:
 
                 } else { // there is an overflow page
                     pageIndex = page.overflowPointerIndex;
+                    // no break!
                 }
             } else {
                 // write modified page to same position
@@ -226,6 +227,7 @@ private:
 
 public:
     HashIndex(string indexFileName) : nextFreePage(0), fileName(indexFileName) {
+        // PageDirectory.resize(256, -1);
     }
 
     // Function to create hash index from Employee CSV file
@@ -246,14 +248,25 @@ public:
             }
             Record record(fields);
 
-            // TODO:
-            //   - Compute hash value for the record's ID using compute_hash_value() function.
-            //   - Get the page index from PageDirectory. If it's not in PageDirectory, define a new page using nextFreePage.
-            //   - Insert the record into the appropriate page in the index file using addRecordToIndex() function.
+            // TODO: ✓
+            //   - Compute hash value for the record's ID using compute_hash_value() function. ✓
+            //   - Get the page index from PageDirectory. If it's not in PageDirectory, define a new page using nextFreePage. ✓
+            //   - Insert the record into the appropriate page in the index file using addRecordToIndex() function. ✓
             int hash_id = compute_hash_value(record.id);
-                // find the right spot
-                // then call addRecord 
+            // find page index
+            int pageIndex = PageDirectory[hash_id];
 
+            // if bucket isn't created yet
+            if (pageIndex == -1) {
+                // make a new page
+                pageIndex = nextFreePage;
+                PageDirectory[hash_id] = pageIndex;
+                nextFreePage++;
+            }
+
+            // insert record into index
+            Page page;
+            addRecordToIndex(pageIndex, page, record);
         }
 
         // Close the CSV file
