@@ -69,7 +69,15 @@ public:
         } else {
             records.push_back(r);
             cur_size += record_size + slot_size;
-			// TODO: update slot directory information
+            
+			// TODO: update slot directory information ✓
+            int offset = 0;
+            // sum all the records sizes to get the total offset
+            for (int i = 0; i < records.size() - 1; i++){
+                offset += records[i].get_size();
+            }
+            // push offset and record size
+            slot_directory.push_back({offset, record_size});
             return true;
         }
     }
@@ -151,9 +159,9 @@ private:
 		//			- go to next overflow page and try inserting there (keep doing this until you find a spot for the record) ✓
 		//			- create an overflow page (if page.overflowPointerIndex == -1) using nextFreePage. update nextFreePage index and pageIndex. ✓
 
-        // Seek to the appropriate position in the index file
-		// TODO: After inserting the record, write the modified page back to the index file. 
-		//		 Remember to use the correct position (i.e., pageIndex) if you are writing out an overflow page!
+        // Seek to the appropriate position in the index file ✓
+		// TODO: After inserting the record, write the modified page back to the index file. ✓
+		//		 Remember to use the correct position (i.e., pageIndex) if you are writing out an overflow page! ✓
         while (true) {
             indexFile.seekp(pageIndex * Page_SIZE, ios::beg); // sets cursor to beginning of page
             page.read_from_data_file(indexFile);
