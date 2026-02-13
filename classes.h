@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <cstring>
 #include <cmath>
+#include <istream>
 
 using namespace std;
 
@@ -150,12 +151,10 @@ private:
 		//			- go to next overflow page and try inserting there (keep doing this until you find a spot for the record)
 		//			- create an overflow page (if page.overflowPointerIndex == -1) using nextFreePage. update nextFreePage index and pageIndex.
 
-
         // Seek to the appropriate position in the index file
 		// TODO: After inserting the record, write the modified page back to the index file. 
 		//		 Remember to use the correct position (i.e., pageIndex) if you are writing out an overflow page!
-        indexFile.seekp(pageIndex * Page_SIZE, ios::beg);
-
+        indexFile.seekp(pageIndex * Page_SIZE, ios::beg); // sets cursor to beginning of page
         // Close the index file
         indexFile.close();
     }
@@ -175,6 +174,17 @@ private:
         // TODO:
         //  - Search for the record by ID in the page
         //  - Check for overflow pages and report if record with given ID is not found
+        
+        // check current page for records
+        for (int i = 0; i < page.records.size(); i++) {
+            if (page.records[i].id == id) {
+                return &page.records[i];
+            }
+        }
+
+        if (page.overflowPointerIndex != -1) {
+            searchRecordByIdInPage(page.overflowPointerIndex, id);
+        } 
 
         return NULL;
 
