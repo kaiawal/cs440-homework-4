@@ -69,7 +69,15 @@ public:
         } else {
             records.push_back(r);
             cur_size += record_size + slot_size;
-			// TODO: update slot directory information
+            
+			// TODO: update slot directory information ✓
+            int offset = 0;
+            // sum all the records sizes to get the total offset
+            for (int i = 0; i < records.size() - 1; i++){
+                offset += records[i].get_size();
+            }
+            // push offset and record size
+            slot_directory.push_back({offset, record_size});
             return true;
         }
     }
@@ -217,29 +225,53 @@ private:
             return;
         }
 		
-		// TODO: 
+		// TODO: ✓
         //  - Use seekp() to seek to the offset of the correct page in the index file
-		//		indexFile.seekp(pageIndex * Page_SIZE, ios::beg);
+		//		indexFile.seekp(pageIndex * Page_SIZE, ios::beg); ✓
 		//  - try insert_record_into_page()
 		//     - if it fails, then you'll need to either...
-		//			- go to next overflow page and try inserting there (keep doing this until you find a spot for the record)
-		//			- create an overflow page (if page.overflowPointerIndex == -1) using nextFreePage. update nextFreePage index and pageIndex.
+		//			- go to next overflow page and try inserting there (keep doing this until you find a spot for the record) ✓
+		//			- create an overflow page (if page.overflowPointerIndex == -1) using nextFreePage. update nextFreePage index and pageIndex. ✓
 
-        // Seek to the appropriate position in the index file
-		// TODO: After inserting the record, write the modified page back to the index file. 
-		//		 Remember to use the correct position (i.e., pageIndex) if you are writing out an overflow page!
-        indexFile.seekp(pageIndex * Page_SIZE, ios::beg); // sets cursor to beginning of page
-        page.read_from_data_file(indexFile);
+        // Seek to the appropriate position in the index file ✓
+		// TODO: After inserting the record, write the modified page back to the index file. ✓
+		//		 Remember to use the correct position (i.e., pageIndex) if you are writing out an overflow page! ✓
+        while (true) {
+            indexFile.seekp(pageIndex * Page_SIZE, ios::beg); // sets cursor to beginning of page
+            page.read_from_data_file(indexFile);
 
-        if (!page.insert_record_into_page(record)) {
-            if (page.overflowPointerIndex == -1) {
+            // if page is full
+            if (!page.insert_record_into_page(record)) {
+                if (page.overflowPointerIndex = -1){ // no overflow page, so create one
+                    int overflowIndex = nextFreePage++;
+                    Page overflowPage;
 
+                    // point the pointer to the overflow page
+                    page.overflowPointerIndex = overflowIndex;
+
+                    // write updated current page back
+                    indexFile.seekp(pageIndex * Page_SIZE, ios::beg);
+                    page.write_into_data_file(indexFile);
+
+                    // insert into new overflow page
+                    overflowPage.insert_record_into_page(record);
+
+                    // write overflow page
+                    indexFile.seekp(overflowIndex * Page_SIZE, ios::beg);
+                    overflowPage.write_into_data_file(indexFile);
+                    break;
+
+                } else { // there is an overflow page
+                    pageIndex = page.overflowPointerIndex;
+                    // no break!
+                }
             } else {
-                
+                // write modified page to same position
+                indexFile.seekp(pageIndex * Page_SIZE, ios::beg);
+                page.write_into_data_file(indexFile);
+                break;
             }
         }
-
-
         // Close the index file
         indexFile.close();
     }
@@ -277,6 +309,7 @@ private:
 
 public:
     HashIndex(string indexFileName) : nextFreePage(0), fileName(indexFileName) {
+        // PageDirectory.resize(256, -1);
     }
 
     // Function to create hash index from Employee CSV file
@@ -297,13 +330,25 @@ public:
             }
             Record record(fields);
 
-            // TODO:
-            //   - Compute hash value for the record's ID using compute_hash_value() function.
-            //   - Get the page index from PageDirectory. If it's not in PageDirectory, define a new page using nextFreePage.
-            //   - Insert the record into the appropriate page in the index file using addRecordToIndex() function.
+            // TODO: ✓
+            //   - Compute hash value for the record's ID using compute_hash_value() function. ✓
+            //   - Get the page index from PageDirectory. If it's not in PageDirectory, define a new page using nextFreePage. ✓
+            //   - Insert the record into the appropriate page in the index file using addRecordToIndex() function. ✓
             int hash_id = compute_hash_value(record.id);
+            // find page index
+            int pageIndex = PageDirectory[hash_id];
 
+            // if bucket isn't created yet
+            if (pageIndex == -1) {
+                // make a new page
+                pageIndex = nextFreePage;
+                PageDirectory[hash_id] = pageIndex;
+                nextFreePage++;
+            }
 
+            // insert record into index
+            Page page;
+            addRecordToIndex(pageIndex, page, record);
         }
 
         // Close the CSV file
