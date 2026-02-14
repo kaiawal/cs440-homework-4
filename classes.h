@@ -119,6 +119,64 @@ public:
         streamsize bytes_read = in.gcount();
         if (bytes_read == 4096) {
             // TODO: Process data to fill the records, slot_directory, and overflowPointerIndex
+
+            // copying overflow pointer from page to variable
+            bytes_read -= sizeof(overflowPointerIndex);
+            memcpy(&overflowPointerIndex, &page_data[bytes_read], sizeof(int));
+            
+            // grabbing size of slot directory
+            bytes_read -= sizeof(int);
+            char buffer[40];
+            memcpy(&buffer, &page_data[bytes_read], sizeof(int));
+            int slot_size = stoi(buffer);
+
+            // loop through slot directory and write data to page class slot directory
+            for(int i = 0; i < slot_size; i++) {
+                if (bytes_read <= 0) {
+                    printf("bytes read size in read_from_data_file reached 0 unintentionally");
+                    break;
+                }
+                bytes_read -= sizeof(pair<int, int>);
+                memcpy(&buffer, &page_data[bytes_read], sizeof(pair<int, int>));
+                slot_directory[i] = <stoi(buffer.substr(0, sizeof(int))), stoi(buffer.substr(sizeof(int) + 1))>
+            }
+
+            // loop through slot directory and add records to the records vector
+            for (int i = 0; i < slot_size; i++) {
+                // grabbing fields for Record
+                vector<string> fields;
+                int offset = slot_directory[i].second;
+                char buffer[500];
+                // id
+                memcpy(page_data[offset], buffer, sizeof(int));
+                offset += sizeof(int);
+                fields.push_back(buffer);
+                // manager id
+                memcpy(page_data[offset], buffer, sizeof(int));
+                offset += sizeof(int);
+                fields.push_back(buffer);
+
+                // name
+                char size[20];
+                memcpy(page_data[offset], size, sizeof(int));
+                offset += sizeof(int);
+                int size_int = stoi(size);
+                memcpy(page_data[offset], buffer, size_int);
+                offset += size_int;
+                fields.insert(1, buffer);
+                // bio
+                memcpy(page_data[offset], size, sizeof(int));
+                offset += sizeof(int);
+                int size_int = stoi(size);
+                memcpy(page_data[offset], buffer, size_int);
+                fields.insert(2, buffer);
+
+                Record p = new Record(fields);
+
+                records.push_back(p);
+                
+            }
+
             return true;
         }
 
