@@ -428,6 +428,7 @@ public:
         Record* found_id = searchRecordByIdInPage(pageIndex, id);
         if (found_id != NULL) {
             found_id->print();
+            return;
         }
 
         // Close the index file
