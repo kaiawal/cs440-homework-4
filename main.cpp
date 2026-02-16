@@ -14,7 +14,7 @@ int main() {
 
     // Create the index
     HashIndex hashIndex("EmployeeIndex.dat");
-    hashIndex.createFromFile("Employee-4.csv");
+    hashIndex.createFromFile("Employee-4_og.csv");
 
     // Loop to lookup IDs until user is ready to quit
     std::string searchID;

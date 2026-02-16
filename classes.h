@@ -64,7 +64,7 @@ public:
     // Function to insert a record into the page
     bool insert_record_into_page(Record r) {
         int record_size = r.get_size();
-        int slot_size = sizeof(int) * 2;
+        int slot_size = sizeof(pair<int, int>);
         if (cur_size + record_size + slot_size > 4096) { // Check if page size limit exceeded, considering slot directory size
             return false; // Cannot insert the record into this page
         } else {
@@ -101,10 +101,6 @@ public:
             cout << "Wrote record at offset " << offset
                 << " size " << serialized.size() << " bytes\n";
 
-            cout << "Bytes written: ";
-            for (int i = 0; i < serialized.size(); i++) {
-                printf("%02X ", (unsigned char)page_data[offset + i]);
-            }
             cout << "\n\n";
             // ---------
 
@@ -146,6 +142,13 @@ public:
 
     // Function to read a page from a binary input stream
     bool read_from_data_file(istream &in) {
+        records.clear();
+        slot_directory.clear();
+        cur_size = sizeof(int);
+        overflowPointerIndex = -1;
+        if (!in) {
+            cout << "file does not exist in read_from_data_file" << endl;
+        }
         char page_data[4096] = {0}; // Buffer to hold page data
         in.read(page_data, 4096); // Read data from input stream
         // DEBUG
@@ -265,8 +268,14 @@ private:
 		// TODO: After inserting the record, write the modified page back to the index file. ✓
 		//		 Remember to use the correct position (i.e., pageIndex) if you are writing out an overflow page! ✓
         while (true) {
-            indexFile.seekp(pageIndex * Page_SIZE, ios::beg); // sets cursor to beginning of page
-            page.read_from_data_file(indexFile);
+            indexFile.seekg(pageIndex * Page_SIZE, ios::beg); // set read cursor to beginning of page
+            if (!page.read_from_data_file(indexFile)) {
+                page.records.clear();
+                page.slot_directory.clear();
+                page.cur_size = sizeof(int);
+                page.overflowPointerIndex = -1;
+                indexFile.clear(); 
+            }
             cout << "Current records in page: " << page.records.size() << endl;
             // if page is full
             if (!page.insert_record_into_page(record)) {
@@ -332,7 +341,7 @@ private:
         }
 
         if (page.overflowPointerIndex != -1) {
-            searchRecordByIdInPage(page.overflowPointerIndex, id);
+            return searchRecordByIdInPage(page.overflowPointerIndex, id);
         } 
 
         return NULL;
@@ -342,9 +351,11 @@ private:
 public:
     HashIndex(string indexFileName) : nextFreePage(0), fileName(indexFileName) {
         PageDirectory.resize(256, -1);
-
-        // ofstream indexFile(fileName, ios::binary | ios::trunc);
-        // indexFile.close();
+        ifstream indexCheck(fileName, ios::binary);
+        if (!indexCheck.good()) {
+            ofstream indexFile(fileName, ios::binary | ios::app);
+            indexFile.close();
+        }
     }
 
     // Function to create hash index from Employee CSV file
@@ -387,23 +398,13 @@ public:
                 // DEBUG 
                 cout << "Making new page" << endl;
                 pageIndex = nextFreePage;
-                PageDirectory[hash_id] = nextFreePage * Page_SIZE;
+                PageDirectory[hash_id] = nextFreePage;
                 nextFreePage++;
                 cout << "pageDirectory: " << PageDirectory[hash_id] << endl;
             }
 
-            // insert record into index
-            //Page page;
-            
-            //if(){
-                // create istream
-                fstream datFile("EmployeeIndex.dat");
-                // read the page
-                Page page;
-                page.read_from_data_file(datFile);
-
-                addRecordToIndex(pageIndex, page, record);
-            //}
+            Page page;
+            addRecordToIndex(pageIndex, page, record);
         }
 
         // Close the CSV file
@@ -419,8 +420,12 @@ public:
         //  - Compute hash value for the given ID using compute_hash_value() function
         //  - Search for the record in the page corresponding to the hash value using searchRecordByIdInPage() function
         int hash_value = compute_hash_value(id);
+        int pageIndex = PageDirectory[hash_value];
+        if (pageIndex == -1) {
+            return;
+        }
 
-        Record* found_id = searchRecordByIdInPage(hash_value, id);
+        Record* found_id = searchRecordByIdInPage(pageIndex, id);
         if (found_id != NULL) {
             found_id->print();
         }
