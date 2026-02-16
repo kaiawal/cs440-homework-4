@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <cstring>
+#include <cstdio>
 #include <cmath>
 #include <istream>
 
@@ -104,9 +105,9 @@ public:
         memcpy(&page_data[offset], &overflowPointerIndex, sizeof(overflowPointerIndex));
 
         // adding size of slot directory
-        offset -= sizeof(slot_directory.size());
-        char size[] = {slot_directory.size()};
-        memcpy(&page_data[offset], size, sizeof(slot_directory.size()));
+        offset -= sizeof(int);
+        int slot_count = static_cast<int>(slot_directory.size());
+        memcpy(&page_data[offset], &slot_count, sizeof(slot_count));
 
         // add every value in slot directory backwards
         for(int i = 0; i < slot_directory.size(); i++) {
@@ -134,9 +135,10 @@ public:
             
             // grabbing size of slot directory
             bytes_read -= sizeof(int);
-            char buffer[40];
-            memcpy(&buffer, &page_data[bytes_read], sizeof(int));
-            int slot_size = stoi(buffer);
+            int slot_size = 0;
+            memcpy(&slot_size, &page_data[bytes_read], sizeof(slot_size));
+            slot_directory.clear();
+            slot_directory.resize(slot_size);
 
             // loop through slot directory and write data to page class slot directory
             for(int i = 0; i < slot_size; i++) {
@@ -145,43 +147,42 @@ public:
                     break;
                 }
                 bytes_read -= sizeof(pair<int, int>);
-                memcpy(&buffer, &page_data[bytes_read], sizeof(pair<int, int>));
-                slot_directory[i] = <stoi(buffer.substr(0, sizeof(int))), stoi(buffer.substr(sizeof(int) + 1))>
+                pair<int, int> entry;
+                memcpy(&entry, &page_data[bytes_read], sizeof(entry));
+                slot_directory[i] = entry;
             }
 
             // loop through slot directory and add records to the records vector
             for (int i = 0; i < slot_size; i++) {
                 // grabbing fields for Record
                 vector<string> fields;
-                int offset = slot_directory[i].second;
-                char buffer[500];
-                // id
-                memcpy(page_data[offset], buffer, sizeof(int));
-                offset += sizeof(int);
-                fields.push_back(buffer);
-                // manager id
-                memcpy(page_data[offset], buffer, sizeof(int));
-                offset += sizeof(int);
-                fields.push_back(buffer);
+                int offset = slot_directory[i].first;
+                int id = 0;
+                int manager_id = 0;
+                int name_len = 0;
+                int bio_len = 0;
 
-                // name
-                char size[20];
-                memcpy(page_data[offset], size, sizeof(int));
-                offset += sizeof(int);
-                int size_int = stoi(size);
-                memcpy(page_data[offset], buffer, size_int);
-                offset += size_int;
-                fields.insert(1, buffer);
-                // bio
-                memcpy(page_data[offset], size, sizeof(int));
-                offset += sizeof(int);
-                int size_int = stoi(size);
-                memcpy(page_data[offset], buffer, size_int);
-                fields.insert(2, buffer);
+                memcpy(&id, page_data + offset, sizeof(id));
+                offset += sizeof(id);
+                memcpy(&manager_id, page_data + offset, sizeof(manager_id));
+                offset += sizeof(manager_id);
 
-                Record p = new Record(fields);
+                memcpy(&name_len, page_data + offset, sizeof(name_len));
+                offset += sizeof(name_len);
+                string name(page_data + offset, name_len);
+                offset += name_len;
 
-                records.push_back(p);
+                memcpy(&bio_len, page_data + offset, sizeof(bio_len));
+                offset += sizeof(bio_len);
+                string bio(page_data + offset, bio_len);
+                offset += bio_len;
+
+                fields.push_back(to_string(id));
+                fields.push_back(name);
+                fields.push_back(bio);
+                fields.push_back(to_string(manager_id));
+
+                records.emplace_back(fields);
                 
             }
 
