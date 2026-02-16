@@ -306,10 +306,10 @@ private:
             } else {
                 // check if there is a record, and if there is, check where the record is
                 
-                    // write modified page to same position
-                    indexFile.seekp(pageIndex * Page_SIZE, ios::beg);
-                    page.write_into_data_file(indexFile);
-                    break;
+                // write modified page to same position
+                indexFile.seekp(pageIndex * Page_SIZE, ios::beg);
+                page.write_into_data_file(indexFile);
+                break;
                 
             }
         }
