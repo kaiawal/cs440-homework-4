@@ -9,8 +9,11 @@ using namespace std;
 
 int main() {
 
+    fstream indexFile("EmployeeIndex.dat", ios::binary | ios::in | ios::out | ios::trunc);
+    indexFile.close();
+
     // Create the index
-    HashIndex hashIndex("EmployeeIndex");
+    HashIndex hashIndex("EmployeeIndex.dat");
     hashIndex.createFromFile("Employee-4.csv");
 
     // Loop to lookup IDs until user is ready to quit

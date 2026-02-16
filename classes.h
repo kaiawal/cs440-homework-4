@@ -70,10 +70,13 @@ public:
         } else {
             records.push_back(r);
             cur_size += record_size + slot_size;
+            // DEBUG
+            cout << "current size in insert" << cur_size << endl;
             
 			// TODO: update slot directory information ✓
             int offset = 0;
             // sum all the records sizes to get the total offset
+            cout << "records size: " << records.size() << endl;
             for (int i = 0; i < records.size() - 1; i++){
                 offset += records[i].get_size();
             }
@@ -92,8 +95,23 @@ public:
         for (const auto &record: records) {
             string serialized = record.serialize();
             memcpy(page_data + offset, serialized.c_str(), serialized.size());
+            
+            // DEBUG
+            // -------
+            cout << "Wrote record at offset " << offset
+                << " size " << serialized.size() << " bytes\n";
+
+            cout << "Bytes written: ";
+            for (int i = 0; i < serialized.size(); i++) {
+                printf("%02X ", (unsigned char)page_data[offset + i]);
+            }
+            cout << "\n\n";
+            // ---------
+
             offset += serialized.size();
         }
+        // DEBUG
+        cout << "offset at start: " << offset << endl;
 
         // TODO: ✓ (Debug)
         //  - Write slot_directory in reverse order into page_data buffer.
@@ -102,16 +120,22 @@ public:
 
         // adding overflow pointer at very end of file
         offset = 4096 - sizeof(overflowPointerIndex);
+        // DEBUG
+        cout << "offset in TODO: " << offset << endl;
         memcpy(&page_data[offset], &overflowPointerIndex, sizeof(overflowPointerIndex));
 
         // adding size of slot directory
         offset -= sizeof(int);
+        cout << "offset after sd: " << offset << endl;
         int slot_count = static_cast<int>(slot_directory.size());
         memcpy(&page_data[offset], &slot_count, sizeof(slot_count));
 
         // add every value in slot directory backwards
+        // DEBUG
+        cout << "sd size: " << slot_directory.size() << endl;
         for(int i = 0; i < slot_directory.size(); i++) {
             offset -= sizeof(slot_directory[i]);
+            //cout << "offset in loop: " << offset << endl;
             memcpy(&page_data[offset], &slot_directory[i], sizeof(slot_directory[i]));
         }
         
@@ -124,8 +148,11 @@ public:
     bool read_from_data_file(istream &in) {
         char page_data[4096] = {0}; // Buffer to hold page data
         in.read(page_data, 4096); // Read data from input stream
-
+        // DEBUG
+        
+ 
         streamsize bytes_read = in.gcount();
+        cout << "bytes read: " << bytes_read << endl;
         if (bytes_read == 4096) {
             // TODO: Process data to fill the records, slot_directory, and overflowPointerIndex
 
@@ -240,9 +267,10 @@ private:
         while (true) {
             indexFile.seekp(pageIndex * Page_SIZE, ios::beg); // sets cursor to beginning of page
             page.read_from_data_file(indexFile);
-
+            cout << "Current records in page: " << page.records.size() << endl;
             // if page is full
             if (!page.insert_record_into_page(record)) {
+                cout << "Current records in page 2: " << page.records.size() << endl;
                 if (page.overflowPointerIndex == -1){ // no overflow page, so create one
                     int overflowIndex = nextFreePage++;
                     Page overflowPage;
@@ -267,10 +295,16 @@ private:
                     // no break!
                 }
             } else {
-                // write modified page to same position
-                indexFile.seekp(pageIndex * Page_SIZE, ios::beg);
-                page.write_into_data_file(indexFile);
-                break;
+                // check if there is a record, and if there is, check where the record is
+                if (page.records.size() > 0){
+                    // find spot it needs to go
+
+                } else {
+                    // write modified page to same position
+                    indexFile.seekp(pageIndex * Page_SIZE, ios::beg);
+                    page.write_into_data_file(indexFile);
+                    break;
+                }
             }
         }
         // Close the index file
@@ -312,8 +346,8 @@ public:
     HashIndex(string indexFileName) : nextFreePage(0), fileName(indexFileName) {
         PageDirectory.resize(256, -1);
 
-        ofstream indexFile(fileName, ios::binary | ios::trunc);
-        indexFile.close();
+        // ofstream indexFile(fileName, ios::binary | ios::trunc);
+        // indexFile.close();
     }
 
     // Function to create hash index from Employee CSV file
@@ -356,15 +390,23 @@ public:
                 // DEBUG 
                 cout << "Making new page" << endl;
                 pageIndex = nextFreePage;
-                PageDirectory[hash_id] = pageIndex;
+                PageDirectory[hash_id] = nextFreePage * Page_SIZE;
                 nextFreePage++;
-                cout << "pageDirectory " << PageDirectory[hash_id] << endl;
+                cout << "pageDirectory: " << PageDirectory[hash_id] << endl;
             }
 
             // insert record into index
-            Page page;
-            addRecordToIndex(pageIndex, page, record);
-            cout << "pageIndex 2: " << pageIndex << endl;
+            //Page page;
+            
+            //if(){
+                // create istream
+                fstream datFile("EmployeeIndex.dat");
+                // read the page
+                Page page;
+                page.read_from_data_file(datFile);
+
+                addRecordToIndex(pageIndex, page, record);
+            //}
         }
 
         // Close the CSV file
