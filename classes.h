@@ -64,7 +64,7 @@ public:
     // Function to insert a record into the page
     bool insert_record_into_page(Record r) {
         int record_size = r.get_size();
-        int slot_size = sizeof(int) * 2;
+        int slot_size = sizeof(pair<int, int>);
         if (cur_size + record_size + slot_size > 4096) { // Check if page size limit exceeded, considering slot directory size
             return false; // Cannot insert the record into this page
         } else {
@@ -116,11 +116,6 @@ public:
             memcpy(&page_data[offset], &slot_directory[i], sizeof(slot_directory[i]));
         }
         
-        printf("Last values: ");
-        for( int i = offset; i < 4096; i++) {
-            printf("%d ", (unsigned char)page_data[i]);
-        }
-        printf("\n");
 
         // Write the page_data buffer to the output stream
         out.write(page_data, sizeof(page_data));
@@ -190,9 +185,10 @@ public:
 
                 records.emplace_back(fields);
                 
+                return true;
             }
 
-            return true;
+            return false;
         }
 
         if (bytes_read > 0) {
@@ -244,7 +240,8 @@ private:
 		// TODO: After inserting the record, write the modified page back to the index file. ✓
 		//		 Remember to use the correct position (i.e., pageIndex) if you are writing out an overflow page! ✓
         while (true) {
-            indexFile.seekg(pageIndex * Page_SIZE, ios::beg); // set read cursor to beginning of page
+            // sets index file cursor to beginning 
+            indexFile.seekg(pageIndex * Page_SIZE, ios::beg); 
             page.read_from_data_file(indexFile);
 
             // if page is full
@@ -286,7 +283,7 @@ private:
     // Function to search for a record by ID in a given page of the index file
     Record* searchRecordByIdInPage(int pageIndex, int id) {
         // Open index file in binary mode for reading
-        ifstream indexFile(fileName, ios::binary | ios::in);
+        ifstream indexFile(fileName, ios::binary | ios::in | ios::out);
 
         // Seek to the appropriate position in the index file
         indexFile.seekg(pageIndex * Page_SIZE, ios::beg);
@@ -310,6 +307,8 @@ private:
             return searchRecordByIdInPage(page.overflowPointerIndex, id);
         } 
 
+        indexFile.close();
+
         return NULL;
 
     }
@@ -317,12 +316,14 @@ private:
 public:
     HashIndex(string indexFileName) : nextFreePage(0), fileName(indexFileName) {
         PageDirectory.resize(256, -1);
-
-        ofstream indexFile(fileName, ios::binary | ios::trunc);
-        indexFile.close();
+        ifstream indexCheck(fileName, ios::binary);
+        if (!indexCheck.good()) {
+            ofstream indexFile(fileName, ios::binary | ios::app);
+            indexFile.close();
+        }
     }
 
-    // Function to create hash index from Employee CSV file
+    //create hash index from Employee CSV file
     void createFromFile(string csvFileName) {
         // Read CSV file and add records to index
         // Open the CSV file for reading
@@ -352,7 +353,7 @@ public:
             // DEBUG
             cout << "Hash id: " << hash_id << endl;
             // find page index
-            int pageIndex = PageDirectory[hash_id];
+            int pageIndex = PageDirectory.at(hash_id);
             // DEBUG
             cout << "pageIndex: " << pageIndex << endl;
 
@@ -362,19 +363,14 @@ public:
                 // DEBUG 
                 cout << "Making new page" << endl;
                 pageIndex = nextFreePage;
-                PageDirectory[hash_id] = nextFreePage;
+                PageDirectory.at(hash_id) = nextFreePage;
                 nextFreePage++;
-                cout << "pageDirectory " << PageDirectory[hash_id] << endl;
-            } 
+                cout << "pageDirectory " << PageDirectory.at(hash_id) << endl;
+            }
 
-            ifstream indexFile(fileName, ios::binary | ios::in);
-            Page p;
-
-            indexFile.seekg(PageDirectory.at(hash_id) * Page_SIZE, ios::beg);
-
-            p.read_from_data_file(indexFile);
             // insert record into index
-            addRecordToIndex(pageIndex, p, record);
+            Page page;
+            addRecordToIndex(pageIndex, page, record);
             cout << "pageIndex 2: " << pageIndex << endl;
         }
 
