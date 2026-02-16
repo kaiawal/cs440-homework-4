@@ -8,10 +8,15 @@ using namespace std;
 
 
 int main() {
+    fstream indexFile("EmployeeIndex.dat", ios::binary | ios::in | ios::out | ios::trunc);
+    indexFile.close();
 
+
+    HashIndex hashIndex("EmployeeIndex.dat");
     // Create the index
-    HashIndex hashIndex("EmployeeIndex");
-    hashIndex.createFromFile("Employee-4.csv");
+    hashIndex.createFromFile("Employee-4_same_bucket.csv");
+
+
 
     // Loop to lookup IDs until user is ready to quit
     std::string searchID;
