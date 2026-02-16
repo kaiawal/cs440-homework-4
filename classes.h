@@ -243,7 +243,7 @@ private:
 
             // if page is full
             if (!page.insert_record_into_page(record)) {
-                if (page.overflowPointerIndex = -1){ // no overflow page, so create one
+                if (page.overflowPointerIndex == -1){ // no overflow page, so create one
                     int overflowIndex = nextFreePage++;
                     Page overflowPage;
 
@@ -310,7 +310,10 @@ private:
 
 public:
     HashIndex(string indexFileName) : nextFreePage(0), fileName(indexFileName) {
-        // PageDirectory.resize(256, -1);
+        PageDirectory.resize(256, -1);
+
+        ofstream indexFile(fileName, ios::binary | ios::trunc);
+        indexFile.close();
     }
 
     // Function to create hash index from Employee CSV file
@@ -335,21 +338,33 @@ public:
             //   - Compute hash value for the record's ID using compute_hash_value() function. ✓
             //   - Get the page index from PageDirectory. If it's not in PageDirectory, define a new page using nextFreePage. ✓
             //   - Insert the record into the appropriate page in the index file using addRecordToIndex() function. ✓
+            
+            //DEBUG
+            //ofstream initFile(fileName, ios::binary | ios::)
+            
             int hash_id = compute_hash_value(record.id);
+            // DEBUG
+            cout << "Hash id: " << hash_id << endl;
             // find page index
             int pageIndex = PageDirectory[hash_id];
+            // DEBUG
+            cout << "pageIndex: " << pageIndex << endl;
 
             // if bucket isn't created yet
             if (pageIndex == -1) {
                 // make a new page
+                // DEBUG 
+                cout << "Making new page" << endl;
                 pageIndex = nextFreePage;
                 PageDirectory[hash_id] = pageIndex;
                 nextFreePage++;
+                cout << "pageDirectory " << PageDirectory[hash_id] << endl;
             }
 
             // insert record into index
             Page page;
             addRecordToIndex(pageIndex, page, record);
+            cout << "pageIndex 2: " << pageIndex << endl;
         }
 
         // Close the CSV file
