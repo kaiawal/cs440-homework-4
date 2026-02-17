@@ -395,8 +395,6 @@ public:
         }
         
         csvFile.close();
-        // DEBUG
-        cout << "Created index with " << recordCount << " records in " << nextFreePage << " pages." << endl;
     }
 
     // Function to search for a record by ID in the hash index
