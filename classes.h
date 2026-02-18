@@ -1,3 +1,10 @@
+/*** 
+ * HW4 CS440
+ * Lydia TerBeek | terbeekl@oregonstate.edu | 934-510-398
+ * Kaia Walker | walkkaia@oregonstate.edu | 934-499-189
+ * 
+ ***/
+
 #include <fstream>
 #include <iostream>
 #include <sstream>
